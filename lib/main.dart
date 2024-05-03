@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:mangovault/screens/login_screen.dart';
 
-void main() {
-  runApp(const MainApp());
-}
+void main() => runApp(const MangoVault());
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class MangoVault extends StatelessWidget {
+  const MangoVault({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+    const title = 'MangoVault';
+
+    return MaterialApp(
+      title: title,
+      home: LoginScreen(key: key),
     );
   }
 }
