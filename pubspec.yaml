@@ -9,12 +9,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  stomp_dart_client: ^2.0.0
   web_socket_channel: ^2.4.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
