@@ -112,7 +112,7 @@ class _ChatScreenState extends State<ChatScreen> {
         jsonEncode({
           'from': widget.username,
           'to': widget.receiver,
-          'message': message
+          'message': message,
         }),
       );
     }
