@@ -1,55 +1,59 @@
-import 'dart:async';
 import 'dart:convert';
-
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:stomp_dart_client/stomp_dart_client.dart';
+import 'constants.dart';
 
 class WebSocketManager {
-  final _messageQueue = <String>[];
+  StompClient? client;
   Function(String message)? _callback;
 
-  late final WebSocketChannel _channel;
-  late final StreamSubscription<dynamic> _subscription;
+  final _messageQueue = <String>[];
 
   bool _isReady = false;
+  String? token;
 
-  void connect() {
-    _channel = WebSocketChannel.connect(Uri.parse('ws://192.168.0.16:8080/ws'));
-
-    _subscription.onData((message) {
-      if (_isReady) {
-        _processMessage(message);
-      } else {
-        _messageQueue.add(message);
-      }
-    });
-  }
+  WebSocketManager();
 
   void authenticate(
     String username,
     String password,
     Function(bool success) onAuthenticationResult,
   ) {
-    final credentials =
-        jsonEncode({'username': username, 'password': password});
+    token = base64.encode(utf8.encode("$username:$password"));
 
-    _channel.sink.add(credentials);
-    _subscription = _channel.stream.listen(
-      (message) {
-        final response = jsonDecode(message);
+    client = StompClient(
+      config: StompConfig(
+          url: serverUrl,
+          onConnect: (StompFrame frame) {
+            markNotReady();
 
-        if (response['success']) {
-          markNotReady();
-          // connect();
-        }
+            client?.subscribe(
+              destination: '/user/queue/chat',
+              callback: (frame) {
+                if (_isReady) {
+                  _processMessage(frame.body!);
+                } else {
+                  _messageQueue.add(frame.body!);
+                }
+              },
+            );
 
-        onAuthenticationResult(response['success']);
-      },
-      cancelOnError: true,
+            onAuthenticationResult(true);
+          },
+          webSocketConnectHeaders: {'Authorization': 'Basic $token'},
+          onWebSocketError: (dynamic error) {
+            onAuthenticationResult(false);
+            print(error.toString());
+          }),
     );
+
+    client?.activate();
   }
 
   void sendMessage(String message) {
-    _channel.sink.add(message);
+    client?.send(
+      destination: "/app/chat",
+      body: message,
+    );
   }
 
   void setCallback(Function(String message) callback) {
@@ -67,7 +71,7 @@ class WebSocketManager {
   }
 
   void disconnect() {
-    _channel.sink.close();
+    client?.deactivate();
   }
 
   void _processMessage(String message) {
