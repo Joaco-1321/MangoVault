@@ -4,14 +4,14 @@ import 'package:mangovault/screens/home_screen.dart';
 import 'package:mangovault/web_socket_manager.dart';
 import 'package:mangovault/widgets/app_name_text.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class AuthScreen extends StatefulWidget {
+  const AuthScreen();
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _AuthScreenState extends State<AuthScreen> {
   final _socketManager = WebSocketManager();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();

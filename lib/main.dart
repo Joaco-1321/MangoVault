@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mangovault/screens/login_screen.dart';
+import 'package:mangovault/screens/auth_screen.dart';
 
 void main() => runApp(const MangoVault());
 
@@ -16,7 +16,7 @@ class MangoVault extends StatelessWidget {
         primarySwatch: Colors.orange,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const LoginScreen(),
+      home: const AuthScreen(),
     );
   }
 }
