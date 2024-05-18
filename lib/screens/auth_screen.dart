@@ -12,7 +12,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  final _socketManager = WebSocketService();
+  late final WebSocketService _socketManager;
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _width = 200.0;
@@ -66,6 +66,11 @@ class _AuthScreenState extends State<AuthScreen> {
   void login() {
     final username = _usernameController.text;
     final password = _passwordController.text;
+
+    _socketManager = WebSocketService(
+      username: username,
+      password: password,
+    );
 
     _socketManager.authenticate(
       username,

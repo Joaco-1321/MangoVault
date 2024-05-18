@@ -4,23 +4,25 @@ import 'package:mangovault/constants.dart';
 
 class WebSocketService {
   late StompClient _stompClient;
+  late String authToken;
+
   Function(String message)? _callback;
 
   final _messageQueue = <String>[];
 
   bool _loginAttempt = true;
   bool _isReady = false;
-  String? token;
+  String username;
+  String password;
 
-  WebSocketService();
+  WebSocketService({
+    required this.username,
+    required this.password,
+  }) {
+    authToken = base64.encode(utf8.encode('$username:$password'));
+  }
 
-  void authenticate(
-    String username,
-    String password,
-    Function(bool success) onAuthenticationResult,
-  ) {
-    token = base64.encode(utf8.encode("$username:$password"));
-
+  void authenticate(Function(bool success) onAuthenticationResult) {
     _stompClient = StompClient(
       config: StompConfig(
           url: serverUrl,
@@ -41,7 +43,7 @@ class WebSocketService {
 
             onAuthenticationResult(true);
           },
-          webSocketConnectHeaders: {'Authorization': 'Basic $token'},
+          webSocketConnectHeaders: {'Authorization': 'Basic $authToken'},
           onWebSocketError: (dynamic error) {
             if (_loginAttempt) {
               _stompClient?.deactivate();
