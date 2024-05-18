@@ -10,7 +10,7 @@ class WebSocketService {
 
   final _messageQueue = <String>[];
 
-  bool _loginAttempt = true;
+  bool _shouldReconnect = true;
   bool _isReady = false;
   String username;
   String password;
@@ -27,7 +27,7 @@ class WebSocketService {
       config: StompConfig(
           url: serverUrl,
           onConnect: (StompFrame frame) {
-            _loginAttempt = true;
+            _shouldReconnect = true;
             markNotReady();
 
             _stompClient.subscribe(
@@ -45,7 +45,7 @@ class WebSocketService {
           },
           webSocketConnectHeaders: {'Authorization': 'Basic $authToken'},
           onWebSocketError: (dynamic error) {
-            if (_loginAttempt) {
+            if (_shouldReconnect) {
               _stompClient.deactivate();
             }
 
