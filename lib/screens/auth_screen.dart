@@ -70,35 +70,36 @@ class _AuthScreenState extends State<AuthScreen> {
     _socketManager = WebSocketService(
       username: username,
       password: password,
+      onConnectCallback: _onConnect,
+      onErrorCallback: _onError,
     );
 
-    _socketManager.authenticate(
-      username,
-      password,
-      (success) {
-        if (success) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HomeScreen(User(username), _socketManager),
-            ),
-          );
-        } else {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('login failed'),
-              content: const Text('invalid username or password'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('ok'),
-                ),
-              ],
-            ),
-          );
-        }
-      },
+    _socketManager.authenticate();
+  }
+
+  void _onConnect() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            HomeScreen(User(_usernameController.text), _socketManager),
+      ),
+    );
+  }
+
+  void _onError(String error) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('login failed'),
+        content: const Text('invalid username or password'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ok'),
+          ),
+        ],
+      ),
     );
   }
 }

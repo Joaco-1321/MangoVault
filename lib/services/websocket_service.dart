@@ -7,10 +7,12 @@ class WebSocketService {
   late String authToken;
 
   Function(String message)? _callback;
+  Function? onConnectCallback;
+  Function(String)? onErrorCallback;
 
   final _messageQueue = <String>[];
 
-  bool _shouldReconnect = true;
+  bool _shouldReconnect = false;
   bool _isReady = false;
   String username;
   String password;
@@ -18,16 +20,21 @@ class WebSocketService {
   WebSocketService({
     required this.username,
     required this.password,
+    this.onConnectCallback,
+    this.onErrorCallback,
   }) {
     authToken = base64.encode(utf8.encode('$username:$password'));
   }
 
-  void authenticate(Function(bool success) onAuthenticationResult) {
+  void authenticate() {
     _stompClient = StompClient(
       config: StompConfig(
           url: serverUrl,
           onConnect: (StompFrame frame) {
             _shouldReconnect = true;
+
+            onConnectCallback?.call();
+
             markNotReady();
 
             _stompClient.subscribe(
@@ -40,17 +47,13 @@ class WebSocketService {
                 }
               },
             );
-
-            onAuthenticationResult(true);
           },
           webSocketConnectHeaders: {'Authorization': 'Basic $authToken'},
           onWebSocketError: (dynamic error) {
-            if (_shouldReconnect) {
+            if (!_shouldReconnect) {
               _stompClient.deactivate();
+              onErrorCallback?.call(error.toString());
             }
-
-            onAuthenticationResult(false);
-            print(error.toString());
           }),
     );
 
