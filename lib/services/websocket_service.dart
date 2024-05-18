@@ -30,24 +30,7 @@ class WebSocketService {
     _stompClient = StompClient(
       config: StompConfig(
           url: serverUrl,
-          onConnect: (StompFrame frame) {
-            _shouldReconnect = true;
-
-            onConnectCallback?.call();
-
-            markNotReady();
-
-            _stompClient.subscribe(
-              destination: '/user/queue/chat',
-              callback: (frame) {
-                if (_isReady) {
-                  _processMessage(frame.body!);
-                } else {
-                  _messageQueue.add(frame.body!);
-                }
-              },
-            );
-          },
+          onConnect: _onConnect,
           webSocketConnectHeaders: {'Authorization': 'Basic $authToken'},
           onWebSocketError: (dynamic error) {
             if (!_shouldReconnect) {
@@ -83,6 +66,25 @@ class WebSocketService {
 
   void disconnect() {
     _stompClient.deactivate();
+  }
+
+  void _onConnect(StompFrame frame) {
+    _shouldReconnect = true;
+
+    onConnectCallback?.call();
+
+    markNotReady();
+
+    _stompClient.subscribe(
+      destination: '/user/queue/chat',
+      callback: (frame) {
+        if (_isReady) {
+          _processMessage(frame.body!);
+        } else {
+          _messageQueue.add(frame.body!);
+        }
+      },
+    );
   }
 
   void _processMessage(String message) {
