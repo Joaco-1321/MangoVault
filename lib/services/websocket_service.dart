@@ -27,19 +27,18 @@ class WebSocketService {
   }
 
   void authenticate() {
-    _stompClient = StompClient(
-      config: StompConfig(
-          url: serverUrl,
-          onConnect: _onConnect,
-          webSocketConnectHeaders: {'Authorization': 'Basic $authToken'},
-          onWebSocketError: (dynamic error) {
-            if (!_shouldReconnect) {
-              _stompClient.deactivate();
-              onErrorCallback?.call(error.toString());
-            }
-          }),
-    );
+    final config = StompConfig(
+        url: serverUrl,
+        onConnect: _onConnect,
+        webSocketConnectHeaders: {'Authorization': 'Basic $authToken'},
+        onWebSocketError: (dynamic error) {
+          if (!_shouldReconnect) {
+            _stompClient.deactivate();
+            onErrorCallback?.call(error.toString());
+          }
+        });
 
+    _stompClient = StompClient(config: config);
     _stompClient.activate();
   }
 
