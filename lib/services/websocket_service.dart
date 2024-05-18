@@ -30,7 +30,7 @@ class WebSocketService {
             _loginAttempt = true;
             markNotReady();
 
-            _stompClient?.subscribe(
+            _stompClient.subscribe(
               destination: '/user/queue/chat',
               callback: (frame) {
                 if (_isReady) {
@@ -46,7 +46,7 @@ class WebSocketService {
           webSocketConnectHeaders: {'Authorization': 'Basic $authToken'},
           onWebSocketError: (dynamic error) {
             if (_loginAttempt) {
-              _stompClient?.deactivate();
+              _stompClient.deactivate();
             }
 
             onAuthenticationResult(false);
@@ -54,11 +54,11 @@ class WebSocketService {
           }),
     );
 
-    _stompClient?.activate();
+    _stompClient.activate();
   }
 
   void sendMessage(String message) {
-    _stompClient?.send(
+    _stompClient.send(
       destination: "/app/chat",
       body: message,
     );
@@ -79,7 +79,7 @@ class WebSocketService {
   }
 
   void disconnect() {
-    _stompClient?.deactivate();
+    _stompClient.deactivate();
   }
 
   void _processMessage(String message) {
