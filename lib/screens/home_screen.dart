@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mangovault/model/user.dart';
 import 'package:mangovault/screens/chat_screen.dart';
-import 'package:mangovault/web_socket_manager.dart';
+import 'package:mangovault/services/websocket_service.dart';
 import 'package:mangovault/widgets/app_name_text.dart';
 
 class HomeScreen extends StatefulWidget {
   final User user;
-  final WebSocketManager manager;
+  final WebSocketService manager;
 
   const HomeScreen(this.user, this.manager, {super.key});
 

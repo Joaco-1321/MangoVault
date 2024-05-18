@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:mangovault/web_socket_manager.dart';
+import 'package:mangovault/services/websocket_service.dart';
 import 'package:mangovault/model/message.dart';
 
 class ChatScreen extends StatefulWidget {
   final String username;
   final String receiver;
-  final WebSocketManager manager;
+  final WebSocketService manager;
 
   const ChatScreen({
     required this.username,

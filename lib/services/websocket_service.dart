@@ -1,17 +1,18 @@
 import 'dart:convert';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
-import 'constants.dart';
+import 'package:mangovault/constants.dart';
 
-class WebSocketManager {
+class WebSocketService {
   StompClient? client;
   Function(String message)? _callback;
 
   final _messageQueue = <String>[];
 
+  bool _loginAttempt = true;
   bool _isReady = false;
   String? token;
 
-  WebSocketManager();
+  WebSocketService();
 
   void authenticate(
     String username,
@@ -24,6 +25,7 @@ class WebSocketManager {
       config: StompConfig(
           url: serverUrl,
           onConnect: (StompFrame frame) {
+            _loginAttempt = true;
             markNotReady();
 
             client?.subscribe(
@@ -41,6 +43,10 @@ class WebSocketManager {
           },
           webSocketConnectHeaders: {'Authorization': 'Basic $token'},
           onWebSocketError: (dynamic error) {
+            if (_loginAttempt) {
+              client?.deactivate();
+            }
+
             onAuthenticationResult(false);
             print(error.toString());
           }),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mangovault/model/user.dart';
 import 'package:mangovault/screens/home_screen.dart';
-import 'package:mangovault/web_socket_manager.dart';
+import 'package:mangovault/services/websocket_service.dart';
 import 'package:mangovault/widgets/app_name_text.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  final _socketManager = WebSocketManager();
+  final _socketManager = WebSocketService();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _width = 200.0;
