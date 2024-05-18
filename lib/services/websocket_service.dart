@@ -3,7 +3,7 @@ import 'package:stomp_dart_client/stomp_dart_client.dart';
 import 'package:mangovault/constants.dart';
 
 class WebSocketService {
-  StompClient? client;
+  late StompClient _stompClient;
   Function(String message)? _callback;
 
   final _messageQueue = <String>[];
@@ -21,14 +21,14 @@ class WebSocketService {
   ) {
     token = base64.encode(utf8.encode("$username:$password"));
 
-    client = StompClient(
+    _stompClient = StompClient(
       config: StompConfig(
           url: serverUrl,
           onConnect: (StompFrame frame) {
             _loginAttempt = true;
             markNotReady();
 
-            client?.subscribe(
+            _stompClient?.subscribe(
               destination: '/user/queue/chat',
               callback: (frame) {
                 if (_isReady) {
@@ -44,7 +44,7 @@ class WebSocketService {
           webSocketConnectHeaders: {'Authorization': 'Basic $token'},
           onWebSocketError: (dynamic error) {
             if (_loginAttempt) {
-              client?.deactivate();
+              _stompClient?.deactivate();
             }
 
             onAuthenticationResult(false);
@@ -52,11 +52,11 @@ class WebSocketService {
           }),
     );
 
-    client?.activate();
+    _stompClient?.activate();
   }
 
   void sendMessage(String message) {
-    client?.send(
+    _stompClient?.send(
       destination: "/app/chat",
       body: message,
     );
@@ -77,7 +77,7 @@ class WebSocketService {
   }
 
   void disconnect() {
-    client?.deactivate();
+    _stompClient?.deactivate();
   }
 
   void _processMessage(String message) {
