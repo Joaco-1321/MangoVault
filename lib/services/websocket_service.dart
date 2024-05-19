@@ -7,34 +7,47 @@ class WebSocketService {
   late String authToken;
 
   Function(String message)? _callback;
-  Function? onConnectCallback;
-  Function(String)? onErrorCallback;
 
   final _messageQueue = <String>[];
 
   bool _shouldReconnect = false;
   bool _isReady = false;
-  String username;
-  String password;
 
-  WebSocketService({
-    required this.username,
-    required this.password,
-    this.onConnectCallback,
-    this.onErrorCallback,
+  WebSocketService();
+
+  void connect(
+    String username,
+    String password, {
+    Function? onConnect,
+    Function(String)? onError,
   }) {
-    authToken = base64.encode(utf8.encode('$username:$password'));
-  }
+    final authToken = base64.encode(utf8.encode('$username:$password'));
 
-  void connect() {
     final config = StompConfig(
         url: serverUrl,
-        onConnect: _onConnect,
+        onConnect: (StompFrame frame) {
+          _shouldReconnect = true;
+
+          onConnect?.call();
+
+          markNotReady();
+
+          _stompClient.subscribe(
+            destination: '/user/queue/chat',
+            callback: (frame) {
+              if (_isReady) {
+                _processMessage(frame.body!);
+              } else {
+                _messageQueue.add(frame.body!);
+              }
+            },
+          );
+        },
         webSocketConnectHeaders: {'Authorization': 'Basic $authToken'},
         onWebSocketError: (dynamic error) {
           if (!_shouldReconnect) {
             _stompClient.deactivate();
-            onErrorCallback?.call(error.toString());
+            onError?.call(error.toString());
           }
         });
 
@@ -65,25 +78,6 @@ class WebSocketService {
 
   void disconnect() {
     _stompClient.deactivate();
-  }
-
-  void _onConnect(StompFrame frame) {
-    _shouldReconnect = true;
-
-    onConnectCallback?.call();
-
-    markNotReady();
-
-    _stompClient.subscribe(
-      destination: '/user/queue/chat',
-      callback: (frame) {
-        if (_isReady) {
-          _processMessage(frame.body!);
-        } else {
-          _messageQueue.add(frame.body!);
-        }
-      },
-    );
   }
 
   void _processMessage(String message) {

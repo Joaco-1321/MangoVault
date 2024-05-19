@@ -17,7 +17,6 @@ class _AuthScreenState extends State<AuthScreen> {
   final _passwordController = TextEditingController();
   final _width = 200.0;
 
-
   @override
   void dispose() {
     _usernameController.dispose();
@@ -72,17 +71,14 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void login() {
-    final username = _usernameController.text;
-    final password = _passwordController.text;
+    _socketManager = WebSocketService();
 
-    _socketManager = WebSocketService(
-      username: username,
-      password: password,
-      onConnectCallback: _onConnect,
-      onErrorCallback: _onError,
+    _socketManager.connect(
+      _usernameController.text,
+      _passwordController.text,
+      onConnect: _onConnect,
+      onError: _onError,
     );
-
-    _socketManager.connect();
   }
 
   void _onConnect() {
