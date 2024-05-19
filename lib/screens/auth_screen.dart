@@ -82,7 +82,7 @@ class _AuthScreenState extends State<AuthScreen> {
       onErrorCallback: _onError,
     );
 
-    _socketManager.authenticate();
+    _socketManager.connect();
   }
 
   void _onConnect() {

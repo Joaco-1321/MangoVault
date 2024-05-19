@@ -26,7 +26,7 @@ class WebSocketService {
     authToken = base64.encode(utf8.encode('$username:$password'));
   }
 
-  void authenticate() {
+  void connect() {
     final config = StompConfig(
         url: serverUrl,
         onConnect: _onConnect,
