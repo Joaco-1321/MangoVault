@@ -20,8 +20,6 @@ class AuthService with ChangeNotifier {
       onConnect: _onConnect,
       onError: _onError,
     );
-
-    notifyListeners();
   }
 
   void _onConnect() {
