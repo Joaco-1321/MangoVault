@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mangovault/model/user.dart';
 import 'package:mangovault/screens/home_screen.dart';
-import 'package:mangovault/services/websocket_service.dart';
+import 'package:mangovault/services/auth_service.dart';
 import 'package:mangovault/widgets/app_name_text.dart';
+import 'package:provider/provider.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen();
@@ -12,10 +13,20 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  late final WebSocketService _socketManager;
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _width = 200.0;
+
+  late final AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _authService = context.read<AuthService>();
+      _authService.addListener(_authListener);
+    });
+  }
 
   @override
   void dispose() {
@@ -70,40 +81,36 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  void login() {
-    _socketManager = WebSocketService();
+  void _authListener() {
+    if (_authService.isAuthenticated) {
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) =>
+      //         HomeScreen(User(_usernameController.text), _socketManager),
+      //   ),
+      // );
+    } else {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('login failed'),
+          content: const Text('invalid username or password'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('ok'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
-    _socketManager.connect(
+  void login() {
+    _authService.authenticate(
       _usernameController.text,
       _passwordController.text,
-      onConnect: _onConnect,
-      onError: _onError,
-    );
-  }
-
-  void _onConnect() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            HomeScreen(User(_usernameController.text), _socketManager),
-      ),
-    );
-  }
-
-  void _onError(String error) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('login failed'),
-        content: const Text('invalid username or password'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('ok'),
-          ),
-        ],
-      ),
     );
   }
 }
