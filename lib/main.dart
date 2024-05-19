@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:mangovault/screens/auth_screen.dart';
+import 'package:mangovault/services/auth_service.dart';
+import 'package:mangovault/services/websocket_service.dart';
+import 'package:provider/provider.dart';
 
-void main() => runApp(const MangoVault());
+void main() => runApp(
+      MultiProvider(
+        providers: [
+          Provider<WebSocketService>(
+            create: (_) => WebSocketService(),
+          ),
+          ChangeNotifierProxyProvider<WebSocketService, AuthService>(
+            create: (context) => AuthService(context.read<WebSocketService>()),
+            update: (_, __, authService) => authService!,
+          ),
+        ],
+        child: const MangoVault(),
+      ),
+    );
 
 class MangoVault extends StatelessWidget {
   const MangoVault();
