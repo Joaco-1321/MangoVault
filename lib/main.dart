@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mangovault/notifier/auth_mode_notifier.dart';
 import 'package:mangovault/screens/auth_screen.dart';
 import 'package:mangovault/services/auth_service.dart';
 import 'package:mangovault/services/websocket_service.dart';
@@ -14,6 +15,9 @@ void main() => runApp(
             create: (context) => AuthService(context.read<WebSocketService>()),
             update: (_, __, authService) => authService!,
           ),
+          ChangeNotifierProvider(
+            create: (_) => AuthModeNotifier(),
+          )
         ],
         child: const MangoVault(),
       ),
