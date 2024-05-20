@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  http: ^1.2.1
   provider: ^6.1.2
   stomp_dart_client: ^2.0.0
   web_socket_channel: ^2.4.5
