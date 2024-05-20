@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:mangovault/constants.dart';
 import 'package:mangovault/services/websocket_service.dart';
 
 class AuthService with ChangeNotifier {
@@ -20,6 +24,24 @@ class AuthService with ChangeNotifier {
       onConnect: _onConnect,
       onError: _onError,
     );
+  }
+
+  Future<void> register(String username, String password) async {
+    final response = await http.post(
+      Uri.parse(registerEndpoint),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'username': username,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      authenticate(username, password);
+    } else {
+      _message = json.decode(response.body)['error'];
+      notifyListeners();
+    }
   }
 
   void _onConnect() {
