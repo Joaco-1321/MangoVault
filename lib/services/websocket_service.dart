@@ -4,7 +4,6 @@ import 'package:mangovault/constants.dart';
 
 class WebSocketService {
   late StompClient _stompClient;
-  late String authToken;
 
   Function(String message)? _callback;
 
@@ -16,13 +15,10 @@ class WebSocketService {
   WebSocketService();
 
   void connect(
-    String username,
-    String password, {
+    String authToken, {
     Function? onConnect,
     Function(String)? onError,
   }) {
-    final authToken = base64.encode(utf8.encode('$username:$password'));
-
     final config = StompConfig(
         url: serverUrl,
         onConnect: (StompFrame frame) {

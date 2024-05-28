@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:mangovault/model/user.dart';
 import 'package:mangovault/screens/chat_screen.dart';
-import 'package:mangovault/services/websocket_service.dart';
+import 'package:mangovault/services/notification_service.dart';
 import 'package:mangovault/widgets/app_name_text.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  final User user;
-  final WebSocketService manager;
+  final User _user;
 
-  const HomeScreen(this.user, this.manager, {super.key});
+  const HomeScreen(this._user);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late final NotificationService _notificationService;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notificationService = context.read<NotificationService>();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final friends = widget.user.friends.toList();
+    final friends = widget._user.friends.toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -47,19 +57,19 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ).then((value) {
               if (value != null && value) {
-                setState(() => widget.user.friends.remove(friends[index]));
+                setState(() => widget._user.friends.remove(friends[index]));
               }
             }),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatScreen(
-                  username: widget.user.username,
-                  receiver: friendUsername,
-                  manager: widget.manager,
-                ),
-              ),
-            ),
+            // onTap: () => Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (context) => ChatScreen(
+            //       username: widget._user.username,
+            //       receiver: friendUsername,
+            //       manager: widget.manager,
+            //     ),
+            //   ),
+            // ),
           );
         },
       ),
@@ -97,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((value) {
       String? username = value as String?;
       if (username != null && username.isNotEmpty) {
-        setState(() => widget.user.friends.add(username));
+        setState(() => widget._user.friends.add(username));
       }
     });
   }

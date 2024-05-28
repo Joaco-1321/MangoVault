@@ -133,26 +133,25 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _authListener() {
     if (_authService.isAuthenticated) {
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) =>
-      //         HomeScreen(User(_usernameController.text), _socketManager),
-      //   ),
-      // );
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('success'),
-          content: Text(_authService.message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('ok'),
-            ),
-          ],
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(User(_usernameController.text)),
         ),
       );
+      // showDialog(
+      //   context: context,
+      //   builder: (context) => AlertDialog(
+      //     title: const Text('success'),
+      //     content: Text(_authService.message),
+      //     actions: [
+      //       TextButton(
+      //         onPressed: () => Navigator.pop(context),
+      //         child: const Text('ok'),
+      //       ),
+      //     ],
+      //   ),
+      // );
     } else {
       showDialog(
         context: context,

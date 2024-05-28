@@ -8,6 +8,8 @@ import 'package:mangovault/services/websocket_service.dart';
 class AuthService with ChangeNotifier {
   final WebSocketService _webSocketService;
 
+  late String authToken;
+
   bool _isAuthenticated = false;
   String _message = '';
 
@@ -18,9 +20,10 @@ class AuthService with ChangeNotifier {
   AuthService(this._webSocketService);
 
   void authenticate(String username, String password) {
+    authToken = base64.encode(utf8.encode('$username:$password'));
+
     _webSocketService.connect(
-      username,
-      password,
+      authToken,
       onConnect: _onConnect,
       onError: _onError,
     );
@@ -39,27 +42,46 @@ class AuthService with ChangeNotifier {
     if (response.statusCode == 200) {
       authenticate(username, password);
     } else {
-      _message = json.decode(response.body)['error'];
+      _message = json.decode(response.body)['errors'];
       notifyListeners();
     }
   }
 
   void _onConnect() {
-    _isAuthenticated = true;
-    _message = 'authentication successful';
-    notifyListeners();
+    _setState(
+      isAuthenticated: true,
+      message: 'authentication successful',
+      notify: true,
+    );
   }
 
   void _onError(String error) {
-    _isAuthenticated = false;
-    _message = 'authentication failed failed';
-    notifyListeners();
+    _setState(
+      isAuthenticated: false,
+      message: 'authentication failed',
+      notify: true,
+    );
   }
 
   void logout() {
-    _isAuthenticated = false;
-    _message = '';
+    _setState(
+      isAuthenticated: false,
+      message: '',
+      notify: false,
+    );
+
     _webSocketService.disconnect();
     notifyListeners();
+  }
+
+  void _setState({
+    required bool isAuthenticated,
+    required String message,
+    required bool notify,
+  }) {
+    _isAuthenticated = isAuthenticated;
+    _message = message;
+
+    if (notify) notifyListeners();
   }
 }
