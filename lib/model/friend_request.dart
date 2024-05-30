@@ -1,4 +1,4 @@
-enum RequestStatus { pending, accepted, rejected }
+enum RequestStatus { canceled, pending, accepted, rejected }
 
 class FriendRequest {
   final String requester;
@@ -15,7 +15,14 @@ class FriendRequest {
     return FriendRequest(
       requester: json['requester'],
       recipient: json['recipient'],
-      status: RequestStatus.values.firstWhere((e) => e.name == json['status']),
+      status: RequestStatus.values
+          .firstWhere((e) => e.name == json['status'].toString().toLowerCase()),
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is FriendRequest &&
+      requester == other.requester &&
+      recipient == other.recipient;
 }

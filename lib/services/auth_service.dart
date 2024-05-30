@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mangovault/constants.dart';
-import 'package:mangovault/model/user.dart';
 import 'package:mangovault/services/websocket_service.dart';
 
 class AuthService with ChangeNotifier {

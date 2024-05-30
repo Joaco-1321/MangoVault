@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mangovault/model/user.dart';
 import 'package:mangovault/screens/chat_screen.dart';
-import 'package:mangovault/services/notification_service.dart';
+import 'package:mangovault/screens/friend_request_screen.dart';
+import 'package:mangovault/services/friend_service.dart';
 import 'package:mangovault/widgets/app_name_text.dart';
 import 'package:provider/provider.dart';
 
@@ -15,67 +16,40 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final NotificationService _notificationService;
+  late final FriendService _friendService;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _notificationService = context.read<NotificationService>();
+      _friendService = context.read<FriendService>();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final friends = widget._user.friends.toList();
-
     return Scaffold(
       appBar: AppBar(
         title: const AppNameText(),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (context) => FriendRequestScreen(widget._user)),
+            ),
+          ),
+        ],
       ),
-      body: ListView.builder(
-        itemCount: friends.length,
-        itemBuilder: (context, index) {
-          final friendUsername = friends[index];
-
-          return ListTile(
-            title: Text(friendUsername),
-            onLongPress: () => showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('remove friend?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text('yes'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('no'),
-                  )
-                ],
-              ),
-            ).then((value) {
-              if (value != null && value) {
-                setState(() => widget._user.friends.remove(friends[index]));
-              }
-            }),
-            // onTap: () => Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (context) => ChatScreen(
-            //       username: widget._user.username,
-            //       receiver: friendUsername,
-            //       manager: widget.manager,
-            //     ),
-            //   ),
-            // ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => showDialogWithInput(context),
-        child: const Icon(Icons.add),
+      body: Consumer<FriendService>(
+        builder: (context, friendService, child) => ListView.builder(
+          itemCount: friendService.friends.length,
+          itemBuilder: (context, index) {
+            return ListTile(
+              title: Text(friendService.friends[index]),
+            );
+          },
+        ),
       ),
     );
   }
@@ -107,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((value) {
       String? username = value as String?;
       if (username != null && username.isNotEmpty) {
-        setState(() => widget._user.friends.add(username));
+        _friendService.sendFriendRequest(widget._user.username, username);
       }
     });
   }

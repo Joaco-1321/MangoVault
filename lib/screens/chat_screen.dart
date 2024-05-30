@@ -29,17 +29,6 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-
-    widget.manager.setCallback(
-      (message) => updateChat(
-        Message(
-          jsonDecode(message)['message'],
-          false,
-        ),
-      ),
-    );
-
-    widget.manager.markReady();
   }
 
   @override
