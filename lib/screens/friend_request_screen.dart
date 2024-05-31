@@ -56,7 +56,7 @@ class _FriendRequestScreenState extends State<FriendRequestScreen> {
                   ListTile(
                     title: const Text('friend requests received'),
                     subtitle: Column(
-                      children: friendService.friendRequests
+                      children: friendService.receivedRequests
                           .map((username) => ListTile(
                                 title: Text(username.requester),
                                 trailing: Row(

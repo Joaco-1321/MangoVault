@@ -9,11 +9,14 @@ class AuthService with ChangeNotifier {
   final WebSocketService _webSocketService;
 
   String? _authToken;
+  String? _username;
 
   bool _isAuthenticated = false;
   String _message = '';
 
   String? get authToken => _authToken;
+
+  String? get username => _username;
 
   bool get isAuthenticated => _isAuthenticated;
 
@@ -26,7 +29,10 @@ class AuthService with ChangeNotifier {
 
     _webSocketService.connect(
       _authToken!,
-      onConnect: _onConnect,
+      onConnect: () {
+        _username = username;
+        _onConnect();
+      },
       onError: _onError,
     );
   }

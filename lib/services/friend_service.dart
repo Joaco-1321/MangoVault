@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:mangovault/constants.dart';
 import 'package:mangovault/model/friend_request.dart';
+import 'package:mangovault/services/api_service.dart';
 import 'package:mangovault/services/auth_service.dart';
 import 'package:mangovault/services/websocket_service.dart';
 
@@ -12,16 +13,41 @@ class FriendService with ChangeNotifier {
   final AuthService _authService;
 
   List<String> _friends = [];
-  List<FriendRequest> _friendRequests = [];
+  List<FriendRequest> _receivedRequests = [];
   List<FriendRequest> _sentRequests = [];
 
   List<String> get friends => _friends;
 
-  List<FriendRequest> get friendRequests => _friendRequests;
+  List<FriendRequest> get receivedRequests => _receivedRequests;
 
   List<FriendRequest> get sentRequests => _sentRequests;
 
   FriendService(this._webSocketService, this._authService) {
+    init();
+  }
+
+  Future<void> init() async {
+    _friends = await ApiService.getJsonList(
+      friendEndpoint,
+      _authService.authToken!,
+    );
+
+    final tmpFriendRequests =
+        (await ApiService.getJsonList<Map<String, dynamic>>(
+      '$friendEndpoint/request',
+      _authService.authToken!,
+    ))
+            .map((request) => FriendRequest.fromJson(request))
+            .toList();
+
+    for (var element in tmpFriendRequests) {
+      if (element.recipient == _authService.username) {
+        receivedRequests.add(element);
+      } else {
+        sentRequests.add(element);
+      }
+    }
+
     _webSocketService.subscribe(
       "/user/queue/notification",
       (frame) {
@@ -29,15 +55,15 @@ class FriendService with ChangeNotifier {
 
         switch (requestReceived.status) {
           case RequestStatus.pending:
-            _friendRequests.add(requestReceived);
+            _receivedRequests.add(requestReceived);
           case RequestStatus.accepted:
             _friends.add(requestReceived.recipient);
           case RequestStatus.rejected:
-            _friendRequests.removeWhere(
+            _receivedRequests.removeWhere(
               (request) => request.recipient == requestReceived.recipient,
             );
           case RequestStatus.canceled:
-            _friendRequests.removeWhere(
+            _receivedRequests.removeWhere(
               (request) => request.requester == requestReceived.requester,
             );
         }
@@ -45,6 +71,8 @@ class FriendService with ChangeNotifier {
         notifyListeners();
       },
     );
+
+    notifyListeners();
   }
 
   Future<void> sendFriendRequest(String requester, String recipient) async {
@@ -87,7 +115,8 @@ class FriendService with ChangeNotifier {
 
     if (response.statusCode == 200) {
       _friends.add(requester);
-      _friendRequests.removeWhere((request) => request.requester == requester);
+      _receivedRequests
+          .removeWhere((request) => request.requester == requester);
     }
 
     notifyListeners();
@@ -108,7 +137,8 @@ class FriendService with ChangeNotifier {
     );
 
     if (response.statusCode == 200) {
-      _friendRequests.removeWhere((request) => request.requester == requester);
+      _receivedRequests
+          .removeWhere((request) => request.requester == requester);
     }
 
     notifyListeners();
