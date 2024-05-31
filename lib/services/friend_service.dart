@@ -58,9 +58,12 @@ class FriendService with ChangeNotifier {
             _receivedRequests.add(requestReceived);
           case RequestStatus.accepted:
             _friends.add(requestReceived.recipient);
+            _sentRequests.removeWhere(
+                  (request) => request.recipient == requestReceived.recipient,
+            );
           case RequestStatus.rejected:
-            _receivedRequests.removeWhere(
-              (request) => request.recipient == requestReceived.recipient,
+            _sentRequests.removeWhere(
+                  (request) => request.recipient == requestReceived.recipient,
             );
           case RequestStatus.canceled:
             _receivedRequests.removeWhere(
