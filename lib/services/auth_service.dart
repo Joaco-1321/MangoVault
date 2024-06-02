@@ -3,20 +3,22 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mangovault/constants.dart';
+import 'package:mangovault/model/user.dart';
 import 'package:mangovault/services/websocket_service.dart';
 
 class AuthService with ChangeNotifier {
   final WebSocketService _webSocketService;
 
-  String? _authToken;
-  String? _username;
+  User? _user;
 
   bool _isAuthenticated = false;
   String _message = '';
 
-  String? get authToken => _authToken;
+  User? get user => _user;
 
-  String? get username => _username;
+  String? get authToken => _user?.authToken;
+
+  String? get username => _user?.username;
 
   bool get isAuthenticated => _isAuthenticated;
 
@@ -25,14 +27,11 @@ class AuthService with ChangeNotifier {
   AuthService(this._webSocketService);
 
   void authenticate(String username, String password) {
-    _authToken = base64.encode(utf8.encode('$username:$password'));
+    _user = User(username, base64.encode(utf8.encode('$username:$password')));
 
     _webSocketService.connect(
-      _authToken!,
-      onConnect: () {
-        _username = username;
-        _onConnect();
-      },
+      _user!.authToken,
+      onConnect: _onConnect,
       onError: _onError,
     );
   }
@@ -78,7 +77,7 @@ class AuthService with ChangeNotifier {
       notify: false,
     );
 
-    _authToken = null;
+    _user = null;
     _webSocketService.disconnect();
     notifyListeners();
   }

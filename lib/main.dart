@@ -17,7 +17,10 @@ void main() => runApp(
             create: (context) => AuthService(context.read<WebSocketService>()),
           ),
           ChangeNotifierProvider<MessageService>(
-            create: (context) => MessageService(context.read<WebSocketService>()),
+            create: (context) => MessageService(
+              context.read<WebSocketService>(),
+              context.read<AuthService>(),
+            ),
           ),
           ChangeNotifierProvider<FriendService>(
             create: (context) => FriendService(

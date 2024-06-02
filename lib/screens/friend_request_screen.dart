@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:mangovault/model/user.dart';
+import 'package:mangovault/services/auth_service.dart';
 import 'package:mangovault/services/friend_service.dart';
 import 'package:provider/provider.dart';
 
 class FriendRequestScreen extends StatefulWidget {
-  final User _user;
-
-  const FriendRequestScreen(this._user, {super.key});
+  const FriendRequestScreen({super.key});
 
   @override
   State<FriendRequestScreen> createState() => _FriendRequestScreenState();
@@ -40,8 +38,7 @@ class _FriendRequestScreenState extends State<FriendRequestScreen> {
                     icon: const Icon(Icons.send),
                     onPressed: () {
                       friendService.sendFriendRequest(
-                        widget._user.username,
-                        _usernameController.text.trim(),
+                        recipient: _usernameController.text.trim(),
                       );
 
                       _usernameController.clear();
@@ -57,8 +54,8 @@ class _FriendRequestScreenState extends State<FriendRequestScreen> {
                     title: const Text('friend requests received'),
                     subtitle: Column(
                       children: friendService.receivedRequests
-                          .map((username) => ListTile(
-                                title: Text(username.requester),
+                          .map((request) => ListTile(
+                                title: Text(request.requester),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -66,8 +63,7 @@ class _FriendRequestScreenState extends State<FriendRequestScreen> {
                                       icon: const Icon(Icons.check),
                                       onPressed: () {
                                         friendService.acceptFriendRequest(
-                                          username.requester,
-                                          widget._user.username,
+                                          requester: request.requester,
                                         );
                                       },
                                     ),
@@ -75,8 +71,7 @@ class _FriendRequestScreenState extends State<FriendRequestScreen> {
                                       icon: const Icon(Icons.close),
                                       onPressed: () {
                                         friendService.rejectFriendRequest(
-                                          username.requester,
-                                          widget._user.username,
+                                          requester: request.requester,
                                         );
                                       },
                                     ),
@@ -96,8 +91,7 @@ class _FriendRequestScreenState extends State<FriendRequestScreen> {
                                   icon: const Icon(Icons.cancel),
                                   onPressed: () {
                                     friendService.cancelSentRequest(
-                                      widget._user.username,
-                                      username.recipient,
+                                      recipient: username.recipient,
                                     );
                                   },
                                 ),

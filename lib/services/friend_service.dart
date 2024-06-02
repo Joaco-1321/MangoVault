@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:mangovault/constants.dart';
 import 'package:mangovault/model/friend_request.dart';
+import 'package:mangovault/model/user.dart';
 import 'package:mangovault/services/api_service.dart';
 import 'package:mangovault/services/auth_service.dart';
 import 'package:mangovault/services/websocket_service.dart';
@@ -12,41 +13,32 @@ class FriendService with ChangeNotifier {
   final WebSocketService _webSocketService;
   final AuthService _authService;
 
-  List<String> _friends = [];
-  List<FriendRequest> _receivedRequests = [];
-  List<FriendRequest> _sentRequests = [];
-
-  List<String> get friends => _friends;
-
-  List<FriendRequest> get receivedRequests => _receivedRequests;
-
-  List<FriendRequest> get sentRequests => _sentRequests;
+  late final User _user;
 
   FriendService(this._webSocketService, this._authService) {
+    _user = _authService.user!;
     init();
   }
 
+  List<String> get friends => _user.friends;
+
+  List<FriendRequest> get sentRequests => _user.sentRequests;
+
+  List<FriendRequest> get receivedRequests => _user.receivedRequests;
+
   Future<void> init() async {
-    _friends = await ApiService.getJsonList(
+    _user.friends.addAll(await ApiService.getJsonList(
       friendEndpoint,
       _authService.authToken!,
-    );
+    ));
 
-    final tmpFriendRequests =
-        (await ApiService.getJsonList<Map<String, dynamic>>(
+    _user.addFriendRequests((await ApiService.getJsonList<Map<String, dynamic>>(
       '$friendEndpoint/request',
       _authService.authToken!,
     ))
-            .map((request) => FriendRequest.fromMap(request))
-            .toList();
-
-    for (var element in tmpFriendRequests) {
-      if (element.recipient == _authService.username) {
-        receivedRequests.add(element);
-      } else {
-        sentRequests.add(element);
-      }
-    }
+        .map((request) => FriendRequest.fromMap(request))
+        .where((request) => request.status == RequestStatus.pending)
+        .toList());
 
     _webSocketService.subscribe(
       "/user/queue/notification",
@@ -55,18 +47,18 @@ class FriendService with ChangeNotifier {
 
         switch (requestReceived.status) {
           case RequestStatus.pending:
-            _receivedRequests.add(requestReceived);
+            _user.addFriendRequest(requestReceived);
           case RequestStatus.accepted:
-            _friends.add(requestReceived.recipient);
-            _sentRequests.removeWhere(
-                  (request) => request.recipient == requestReceived.recipient,
+            _user.friends.add(requestReceived.recipient);
+            _user.sentRequests.removeWhere(
+              (request) => request.recipient == requestReceived.recipient,
             );
           case RequestStatus.rejected:
-            _sentRequests.removeWhere(
-                  (request) => request.recipient == requestReceived.recipient,
+            _user.sentRequests.removeWhere(
+              (request) => request.recipient == requestReceived.recipient,
             );
           case RequestStatus.canceled:
-            _receivedRequests.removeWhere(
+            _user.receivedRequests.removeWhere(
               (request) => request.requester == requestReceived.requester,
             );
         }
@@ -78,93 +70,100 @@ class FriendService with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> sendFriendRequest(String requester, String recipient) async {
-    final response = await http.post(
-      Uri.parse('$friendEndpoint/request/send'),
-      headers: {
-        'Authorization': 'Basic ${_authService.authToken}',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'requester': requester,
-        'recipient': recipient,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      _sentRequests.add(FriendRequest(
-        requester: requester,
-        recipient: recipient,
+  Future<void> sendFriendRequest({required String recipient}) async {
+    if (!_user.friends.contains(recipient)) {
+      final statusCode = await _operateFriendRequest(
+        username: recipient,
         status: RequestStatus.pending,
-      ));
-    }
+        postfix: 'send',
+        isRequester: false,
+      );
 
-    notifyListeners();
+      if (statusCode == 200) {
+        _user.sentRequests.add(FriendRequest(
+          requester: _user.username,
+          recipient: recipient,
+          status: RequestStatus.pending,
+        ));
+      }
+
+      notifyListeners();
+    }
   }
 
-  Future<void> acceptFriendRequest(String requester, String recipient) async {
-    final response = await http.post(
-      Uri.parse('$friendEndpoint/request/accept'),
+  Future<void> acceptFriendRequest({required String requester}) async {
+    if (!_user.friends.contains(requester)) {
+      final statusCode = await _operateFriendRequest(
+        username: requester,
+        status: RequestStatus.accepted,
+        postfix: 'accept',
+        isRequester: true,
+      );
+
+      if (statusCode == 200) {
+        _user.friends.add(requester);
+        _user.receivedRequests
+            .removeWhere((request) => request.requester == requester);
+      }
+
+      notifyListeners();
+    }
+  }
+
+  Future<void> rejectFriendRequest({required String requester}) async {
+    if (!_user.friends.contains(requester)) {
+      final statusCode = await _operateFriendRequest(
+        username: requester,
+        status: RequestStatus.rejected,
+        postfix: 'reject',
+        isRequester: true,
+      );
+
+      if (statusCode == 200) {
+        _user.receivedRequests
+            .removeWhere((request) => request.requester == requester);
+      }
+
+      notifyListeners();
+    }
+  }
+
+  Future<void> cancelSentRequest({required String recipient}) async {
+    if (_user.friends.contains(recipient)) {
+      final statusCode = await _operateFriendRequest(
+        username: recipient,
+        status: RequestStatus.canceled,
+        postfix: 'cancel',
+        isRequester: false,
+      );
+
+      if (statusCode == 200) {
+        _user.sentRequests
+            .removeWhere((request) => request.recipient == recipient);
+      }
+
+      notifyListeners();
+    }
+  }
+
+  Future<int> _operateFriendRequest({
+    required String username,
+    required RequestStatus status,
+    required String postfix,
+    required bool isRequester,
+  }) async {
+    return (await http.post(
+      Uri.parse('$friendEndpoint/request/$postfix'),
       headers: {
-        'Authorization': 'Basic ${_authService.authToken}',
+        'Authorization': 'Basic ${_user.authToken}',
         'Content-Type': 'application/json',
       },
       body: json.encode({
-        'requester': requester,
-        'recipient': recipient,
-        'status': RequestStatus.accepted.name.toUpperCase(),
+        'requester': isRequester ? username : _user.username,
+        'recipient': isRequester ? _user.username : username,
+        'status': status.name.toUpperCase(),
       }),
-    );
-
-    if (response.statusCode == 200) {
-      _friends.add(requester);
-      _receivedRequests
-          .removeWhere((request) => request.requester == requester);
-    }
-
-    notifyListeners();
-  }
-
-  Future<void> rejectFriendRequest(String requester, String recipient) async {
-    final response = await http.post(
-      Uri.parse('$friendEndpoint/request/reject'),
-      headers: {
-        'Authorization': 'Basic ${_authService.authToken}',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'requester': requester,
-        'recipient': recipient,
-        'status': RequestStatus.rejected.name.toUpperCase(),
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      _receivedRequests
-          .removeWhere((request) => request.requester == requester);
-    }
-
-    notifyListeners();
-  }
-
-  Future<void> cancelSentRequest(String requester, String recipient) async {
-    final response = await http.post(
-      Uri.parse('$friendEndpoint/request/cancel'),
-      headers: {
-        'Authorization': 'Basic ${_authService.authToken}',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'requester': requester,
-        'recipient': recipient,
-        'status': RequestStatus.canceled.name.toUpperCase(),
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      _sentRequests.removeWhere((request) => request.recipient == recipient);
-    }
-
-    notifyListeners();
+    ))
+        .statusCode;
   }
 }

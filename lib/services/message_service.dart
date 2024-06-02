@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:mangovault/services/auth_service.dart';
 import 'package:path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:mangovault/model/message.dart';
@@ -8,36 +9,32 @@ import 'package:sqflite/sqflite.dart';
 
 class MessageService with ChangeNotifier {
   final WebSocketService _webSocketService;
+  final AuthService _authService;
+  final _messages = <Message>[];
 
   late final Database _database;
 
-  final _messages = <Message>[];
-
-  List<Message> messages(String username) => _messages
-      .where(
-        (message) =>
-            message.recipient == username || message.sender == username,
-      )
-      .toList();
-
-  MessageService(this._webSocketService) {
+  MessageService(this._webSocketService, this._authService) {
     _init();
   }
+
+  List<Message> getMessages(String recipient) => _messages
+      .where((message) =>
+          message.recipient == recipient || message.sender == recipient)
+      .toList();
 
   void sendMessage(Message message) {
     _webSocketService.sendMessage(json.encode(message.toMap()));
     _messages.add(message);
 
-    saveToDb(message);
+    _saveToDb(message);
 
     notifyListeners();
   }
 
   Future<void> _init() async {
-    final String path = join(await getDatabasesPath(), 'mango_history.db');
-
     _database = await openDatabase(
-      path,
+      join(await getDatabasesPath(), 'mango_history.db'),
       version: 1,
       onCreate: (db, version) async {
         await db.execute('''
@@ -47,8 +44,7 @@ class MessageService with ChangeNotifier {
           recipient TEXT,
           message TEXT,
           timestamp INTEGER
-        )
-      ''');
+        )''');
       },
     );
 
@@ -60,7 +56,7 @@ class MessageService with ChangeNotifier {
         final message = Message.fromMap(json.decode(frame.body!));
 
         _messages.add(message);
-        saveToDb(message);
+        _saveToDb(message);
 
         notifyListeners();
       },
@@ -69,7 +65,7 @@ class MessageService with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveToDb(Message message) async {
+  Future<void> _saveToDb(Message message) async {
     await _database.insert(
       'messages',
       message.toMap(),
@@ -78,7 +74,11 @@ class MessageService with ChangeNotifier {
   }
 
   Future<void> _loadMessages() async {
-    final List<Map<String, dynamic>> rows = await _database.query('messages');
+    final List<Map<String, dynamic>> rows = await _database.query(
+      'messages',
+      where: 'sender = ?',
+      whereArgs: [_authService.username],
+    );
 
     for (var row in rows) {
       _messages.add(Message.fromMap(row));

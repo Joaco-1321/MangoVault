@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mangovault/model/message.dart';
+import 'package:mangovault/services/auth_service.dart';
 import 'package:mangovault/services/message_service.dart';
 import 'package:provider/provider.dart';
 
 class ChatScreen extends StatefulWidget {
-  final String username;
   final String recipient;
 
-  const ChatScreen({
-    required this.username,
-    required this.recipient,
-    super.key,
-  });
+  const ChatScreen(this.recipient, {super.key});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -20,6 +16,14 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
+
+  late final AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = context.read<AuthService>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +50,12 @@ class _ChatScreenState extends State<ChatScreen> {
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
-                  itemCount: messageService.messages(widget.recipient).length,
+                  itemCount: messageService.getMessages(widget.recipient).length,
                   itemBuilder: (context, index) {
-                    final message =
-                        messageService.messages(widget.recipient)[index];
+                    final message = messageService.getMessages(widget.recipient)[index];
+
                     return Align(
-                      alignment: message.sender == widget.username
+                      alignment: message.sender == _authService.username!
                           ? Alignment.centerRight
                           : Alignment.centerLeft,
                       child: Container(
@@ -61,7 +65,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                         padding: const EdgeInsets.all(12.0),
                         decoration: BoxDecoration(
-                          color: message.sender == widget.username
+                          color: message.sender == _authService.username!
                               ? Colors.blue
                               : Colors.grey,
                           borderRadius: BorderRadius.circular(16.0),
@@ -94,7 +98,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         if (message.isNotEmpty) {
                           messageService.sendMessage(
                             Message(
-                              widget.username,
+                              _authService.username!,
                               widget.recipient,
                               message,
                               DateTime.now(),

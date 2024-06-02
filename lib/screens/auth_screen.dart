@@ -136,7 +136,7 @@ class _AuthScreenState extends State<AuthScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomeScreen(User(_usernameController.text)),
+          builder: (context) => HomeScreen(),
         ),
       );
       // showDialog(
