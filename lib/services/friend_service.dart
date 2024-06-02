@@ -37,7 +37,7 @@ class FriendService with ChangeNotifier {
       '$friendEndpoint/request',
       _authService.authToken!,
     ))
-            .map((request) => FriendRequest.fromJson(request))
+            .map((request) => FriendRequest.fromMap(request))
             .toList();
 
     for (var element in tmpFriendRequests) {
@@ -51,7 +51,7 @@ class FriendService with ChangeNotifier {
     _webSocketService.subscribe(
       "/user/queue/notification",
       (frame) {
-        final requestReceived = FriendRequest.fromJson(jsonDecode(frame.body!));
+        final requestReceived = FriendRequest.fromMap(jsonDecode(frame.body!));
 
         switch (requestReceived.status) {
           case RequestStatus.pending:

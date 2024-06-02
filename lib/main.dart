@@ -3,6 +3,7 @@ import 'package:mangovault/notifier/auth_mode_notifier.dart';
 import 'package:mangovault/screens/auth_screen.dart';
 import 'package:mangovault/services/auth_service.dart';
 import 'package:mangovault/services/friend_service.dart';
+import 'package:mangovault/services/message_service.dart';
 import 'package:mangovault/services/websocket_service.dart';
 import 'package:provider/provider.dart';
 
@@ -14,6 +15,9 @@ void main() => runApp(
           ),
           ChangeNotifierProvider<AuthService>(
             create: (context) => AuthService(context.read<WebSocketService>()),
+          ),
+          ChangeNotifierProvider<MessageService>(
+            create: (context) => MessageService(context.read<WebSocketService>()),
           ),
           ChangeNotifierProvider<FriendService>(
             create: (context) => FriendService(

@@ -1,19 +1,10 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'friend_request.g.dart';
-
 enum RequestStatus {
-  @JsonValue('CANCELED')
   canceled,
-  @JsonValue('PENDING')
   pending,
-  @JsonValue('ACCEPTED')
   accepted,
-  @JsonValue('REJECTED')
   rejected,
 }
 
-@JsonSerializable()
 class FriendRequest {
   final String requester;
   final String recipient;
@@ -25,10 +16,19 @@ class FriendRequest {
     required this.status,
   });
 
-  factory FriendRequest.fromJson(Map<String, dynamic> json) =>
-      _$FriendRequestFromJson(json);
+  factory FriendRequest.fromMap(Map<String, dynamic> map) => FriendRequest(
+        requester: map['requester'] as String,
+        recipient: map['recipient'] as String,
+        status: RequestStatus.values.firstWhere(
+          (s) => s.name.toUpperCase() == map['status'],
+        ),
+      );
 
-  Map<String, dynamic> toJson() => _$FriendRequestToJson(this);
+  Map<String, dynamic> toMap() => <String, dynamic>{
+        'requester': requester,
+        'recipient': recipient,
+        'status': status.name.toUpperCase(),
+      };
 
   @override
   bool operator ==(Object other) =>
