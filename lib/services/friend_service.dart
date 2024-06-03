@@ -39,12 +39,11 @@ class FriendService with ChangeNotifier {
     await _apiService.get(
       '$friendEndpoint/request',
       (response) {
-        _user.addFriendRequests(
-          (json.decode(response.body) as List<dynamic>)
-              .cast<Map<String, dynamic>>()
-              .map((request) => FriendRequest.fromMap(request))
-              .where((request) => request.status == RequestStatus.pending)
-              .toList());
+        _user.addFriendRequests((json.decode(response.body) as List<dynamic>)
+            .cast<Map<String, dynamic>>()
+            .map((request) => FriendRequest.fromMap(request))
+            .where((request) => request.status == RequestStatus.pending)
+            .toList());
       },
     );
 
@@ -79,7 +78,14 @@ class FriendService with ChangeNotifier {
   }
 
   Future<void> sendFriendRequest({required String recipient}) async {
-    if (!_user.friends.contains(recipient)) {
+    if (!_user.friends.contains(recipient) &&
+        _user.sentRequests
+            .where((request) => request.recipient == recipient)
+            .isNotEmpty &&
+        _user.receivedRequests
+            .where((request) => request.requester == recipient)
+            .isNotEmpty &&
+        _user.username != recipient) {
       final statusCode = await _operateFriendRequest(
         username: recipient,
         status: RequestStatus.pending,
@@ -100,7 +106,7 @@ class FriendService with ChangeNotifier {
   }
 
   Future<void> acceptFriendRequest({required String requester}) async {
-    if (!_user.friends.contains(requester)) {
+    if (!_user.friends.contains(requester) && _user.username != requester) {
       final statusCode = await _operateFriendRequest(
         username: requester,
         status: RequestStatus.accepted,
@@ -119,7 +125,7 @@ class FriendService with ChangeNotifier {
   }
 
   Future<void> rejectFriendRequest({required String requester}) async {
-    if (!_user.friends.contains(requester)) {
+    if (!_user.friends.contains(requester) && _user.username != requester) {
       final statusCode = await _operateFriendRequest(
         username: requester,
         status: RequestStatus.rejected,
@@ -137,7 +143,7 @@ class FriendService with ChangeNotifier {
   }
 
   Future<void> cancelSentRequest({required String recipient}) async {
-    if (_user.friends.contains(recipient)) {
+    if (!_user.friends.contains(recipient) && _user.username != recipient) {
       final statusCode = await _operateFriendRequest(
         username: recipient,
         status: RequestStatus.canceled,
