@@ -12,12 +12,12 @@ import 'package:mangovault/services/websocket_service.dart';
 class FriendService with ChangeNotifier {
   final WebSocketService _webSocketService;
   final AuthService _authService;
+  final ApiService _apiService;
 
   late final User _user;
 
-  FriendService(this._webSocketService, this._authService) {
-    _user = _authService.user!;
-    init();
+  FriendService(this._webSocketService, this._authService, this._apiService) {
+    _init();
   }
 
   List<String> get friends => _user.friends;
@@ -26,22 +26,30 @@ class FriendService with ChangeNotifier {
 
   List<FriendRequest> get receivedRequests => _user.receivedRequests;
 
-  Future<void> init() async {
-    _user.friends.addAll(await ApiService.getJsonList(
-      friendEndpoint,
-      _authService.authToken!,
-    ));
+  Future<void> _init() async {
+    _user = _authService.user!;
 
-    _user.addFriendRequests((await ApiService.getJsonList<Map<String, dynamic>>(
+    await _apiService.get(
+      friendEndpoint,
+      (response) => _user.friends.addAll(
+        (json.decode(response.body) as List<dynamic>).cast(),
+      ),
+    );
+
+    await _apiService.get(
       '$friendEndpoint/request',
-      _authService.authToken!,
-    ))
-        .map((request) => FriendRequest.fromMap(request))
-        .where((request) => request.status == RequestStatus.pending)
-        .toList());
+      (response) {
+        _user.addFriendRequests(
+          (json.decode(response.body) as List<dynamic>)
+              .cast<Map<String, dynamic>>()
+              .map((request) => FriendRequest.fromMap(request))
+              .where((request) => request.status == RequestStatus.pending)
+              .toList());
+      },
+    );
 
     _webSocketService.subscribe(
-      "/user/queue/notification",
+      "/user/queue/notification/request",
       (frame) {
         final requestReceived = FriendRequest.fromMap(jsonDecode(frame.body!));
 

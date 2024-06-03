@@ -4,10 +4,7 @@ import 'package:mangovault/constants.dart';
 class WebSocketService {
   late StompClient _stompClient;
 
-  final Map<String, Function(StompFrame)> _suscriptions = {};
-
   bool _shouldReconnect = false;
-  bool _isReady = false;
 
   WebSocketService();
 
@@ -19,7 +16,10 @@ class WebSocketService {
     final config = StompConfig(
         url: serverUrl,
         webSocketConnectHeaders: {'Authorization': 'Basic $authToken'},
-        onConnect: (frame) => onConnect!(),
+        onConnect: (frame) {
+          _shouldReconnect = true;
+          onConnect!();
+        },
         onWebSocketError: (dynamic error) {
           if (!_shouldReconnect) {
             _stompClient.deactivate();
@@ -31,7 +31,7 @@ class WebSocketService {
     _stompClient.activate();
   }
 
-  void subscribe(String destination, Function(StompFrame) callback) {
+  void subscribe(String destination, void Function(StompFrame) callback) {
     _stompClient.subscribe(
       destination: destination,
       callback: callback,

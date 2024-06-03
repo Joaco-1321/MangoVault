@@ -9,8 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_secure_storage: ^9.2.2
   http: ^1.2.1
   path: ^1.9.0
+  pointycastle: ^3.9.1
   provider: ^6.1.2
   sqflite: ^2.3.3+1
   stomp_dart_client: ^2.0.0

@@ -14,6 +14,8 @@ class AuthService with ChangeNotifier {
   bool _isAuthenticated = false;
   String _message = '';
 
+  AuthService(this._webSocketService);
+
   User? get user => _user;
 
   String? get authToken => _user?.authToken;
@@ -23,8 +25,6 @@ class AuthService with ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
 
   String get message => _message;
-
-  AuthService(this._webSocketService);
 
   void authenticate(String username, String password) {
     _user = User(username, base64.encode(utf8.encode('$username:$password')));
@@ -38,7 +38,7 @@ class AuthService with ChangeNotifier {
 
   Future<void> register(String username, String password) async {
     final response = await http.post(
-      Uri.parse(registerEndpoint),
+      Uri.parse(userEndpoint),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         'username': username,
