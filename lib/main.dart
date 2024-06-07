@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mangovault/notifier/auth_mode_notifier.dart';
+import 'package:mangovault/notifier/auth_notifier.dart';
 import 'package:mangovault/screens/auth_screen.dart';
 import 'package:mangovault/services/api_service.dart';
 import 'package:mangovault/services/auth_service.dart';
@@ -14,7 +14,7 @@ void main() => runApp(
       MultiProvider(
         providers: [
           ChangeNotifierProvider(
-            create: (_) => AuthModeNotifier(),
+            create: (_) => AuthNotifier(),
           ),
           Provider<WebSocketService>(
             create: (_) => WebSocketService(),
@@ -65,7 +65,37 @@ class MangoVault extends StatelessWidget {
     return MaterialApp(
       title: title,
       theme: ThemeData(
-        primarySwatch: Colors.orange,
+        appBarTheme: const AppBarTheme(
+          foregroundColor: Colors.white,
+        ),
+        colorScheme: ColorScheme(
+          brightness: Brightness.light,
+          primary: Colors.orange.shade800,
+          onPrimary: Colors.white,
+          secondary: Colors.orangeAccent,
+          onSecondary: Colors.black,
+          error: Colors.red,
+          onError: Colors.black,
+          surface: Colors.white,
+          onSurface: Colors.black87,
+        ),
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      darkTheme: ThemeData(
+        appBarTheme: const AppBarTheme(
+          foregroundColor: Colors.white,
+        ),
+        colorScheme: ColorScheme(
+          brightness: Brightness.dark,
+          primary: Colors.orange.shade800,
+          onPrimary: Colors.white,
+          secondary: Colors.orangeAccent,
+          onSecondary: Colors.white,
+          error: Colors.red,
+          onError: Colors.black,
+          surface: Colors.black12,
+          onSurface: Colors.white,
+        ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: const AuthScreen(),

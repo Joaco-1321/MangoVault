@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:mangovault/model/user.dart';
-import 'package:mangovault/notifier/auth_mode_notifier.dart';
+import 'package:mangovault/notifier/auth_notifier.dart';
 import 'package:mangovault/screens/home_screen.dart';
 import 'package:mangovault/services/auth_service.dart';
-import 'package:mangovault/widgets/app_name_text.dart';
 import 'package:provider/provider.dart';
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen();
+  const AuthScreen({super.key});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -17,7 +15,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _width = 200.0;
+  final _width = 300.0;
 
   late final AuthService _authService;
 
@@ -41,91 +39,125 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authModeNotifier = context.watch<AuthModeNotifier>();
+    final authNotifier = context.watch<AuthNotifier>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const AppNameText(),
+        title: Text(
+          'MangoVault',
+          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: _width,
-              child: TextField(
-                controller: _usernameController,
-                obscureText: false,
-                decoration: const InputDecoration(labelText: 'username'),
-              ),
-            ),
-            const SizedBox(height: 30.0),
-            SizedBox(
-              width: _width,
-              child: TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'password'),
-              ),
-            ),
-            const SizedBox(height: 30.0),
-            if (!authModeNotifier.isLogin)
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
               SizedBox(
                 width: _width,
                 child: TextField(
-                  controller: _confirmPasswordController,
-                  obscureText: true,
-                  decoration:
-                      const InputDecoration(labelText: 'repeat password'),
+                  controller: _usernameController,
+                  obscureText: false,
+                  decoration: const InputDecoration(
+                    labelText: 'username',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
               ),
-            if (!authModeNotifier.isLogin) const SizedBox(height: 30.0),
-            SizedBox(
-              width: _width,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      if (authModeNotifier.isLogin) {
-                        _authService.authenticate(
-                          _usernameController.text,
-                          _passwordController.text,
-                        );
-                      } else {
-                        if (_passwordController.text !=
-                            _confirmPasswordController.text) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('passwords do not match')),
-                          );
-
-                          return;
-                        }
-
-                        _authService.register(
-                          _usernameController.text,
-                          _passwordController.text,
-                        );
-                      }
-                    },
-                    child: Text(
-                      authModeNotifier.isLogin ? 'login' : 'register',
+              const SizedBox(height: 20.0),
+              SizedBox(
+                width: _width,
+                child: TextField(
+                  controller: _passwordController,
+                  obscureText: !authNotifier.isPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'password',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        authNotifier.isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: authNotifier.togglePasswordVisibility,
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 30.0),
-            TextButton(
-              onPressed: () => authModeNotifier.toggleAuthMode(),
-              child: Text(
-                authModeNotifier.isLogin
-                    ? "don't have an account? register"
-                    : 'already have an account? login',
+              const SizedBox(height: 20.0),
+              if (!authNotifier.isLogin)
+                SizedBox(
+                  width: _width,
+                  child: TextField(
+                    controller: _confirmPasswordController,
+                    obscureText: !authNotifier.isRepeatPasswordVisible,
+                    decoration: InputDecoration(
+                      labelText: 'repeat password',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          authNotifier.isRepeatPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: authNotifier.toggleRepeatPasswordVisibility,
+                      ),
+                    ),
+                  ),
+                ),
+              if (!authNotifier.isLogin) const SizedBox(height: 20.0),
+              SizedBox(
+                width: _width,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                      ),
+                      onPressed: () {
+                        if (authNotifier.isLogin) {
+                          _authService.authenticate(
+                            _usernameController.text,
+                            _passwordController.text,
+                          );
+                        } else {
+                          if (_passwordController.text !=
+                              _confirmPasswordController.text) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('passwords do not match')),
+                            );
+
+                            return;
+                          }
+
+                          _authService.register(
+                            _usernameController.text,
+                            _passwordController.text,
+                          );
+                        }
+                      },
+                      child: Text(
+                        authNotifier.isLogin ? 'login' : 'register',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 30.0),
+              TextButton(
+                onPressed: () => authNotifier.toggleAuthMode(),
+                child: Text(
+                  authNotifier.isLogin
+                      ? "don't have an account? register"
+                      : 'already have an account? login',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -136,22 +168,9 @@ class _AuthScreenState extends State<AuthScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomeScreen(),
+          builder: (context) => const HomeScreen(),
         ),
       );
-      // showDialog(
-      //   context: context,
-      //   builder: (context) => AlertDialog(
-      //     title: const Text('success'),
-      //     content: Text(_authService.message),
-      //     actions: [
-      //       TextButton(
-      //         onPressed: () => Navigator.pop(context),
-      //         child: const Text('ok'),
-      //       ),
-      //     ],
-      //   ),
-      // );
     } else {
       showDialog(
         context: context,

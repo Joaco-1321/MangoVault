@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mangovault/model/user.dart';
 import 'package:mangovault/screens/chat_screen.dart';
 import 'package:mangovault/screens/friend_request_screen.dart';
-import 'package:mangovault/services/auth_service.dart';
 import 'package:mangovault/services/friend_service.dart';
 import 'package:mangovault/services/message_service.dart';
-import 'package:mangovault/widgets/app_name_text.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,10 +17,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const AppNameText(),
+        title: Text(
+          'MangoVault',
+          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_add),
+            icon: const Icon(
+              Icons.person_add,
+              color: Colors.white,
+            ),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                   builder: (context) => const FriendRequestScreen()),
@@ -42,24 +46,51 @@ class _HomeScreenState extends State<HomeScreen> {
 
           return ListView.builder(
             itemCount: friends.length,
-            itemBuilder: (context, index) => ListTile(
-              title: Text(friends[index]),
-              subtitle: Text(
-                messageService.getMessages(friends[index]).isNotEmpty
-                    ? messageService.getMessages(friends[index]).last.message
-                    : '',
-                overflow: TextOverflow.ellipsis,
-              ),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ChatScreen(friends[index]),
+            itemBuilder: (context, index) {
+              final friend = friends[index];
+              final messages = messageService.getMessages(friend);
+              final lastMessage = messages.isNotEmpty ? messages.last : null;
+
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: Text(
+                    friend[0].toUpperCase(),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary),
+                  ),
                 ),
-              ),
-              onLongPress: () => confirmationDialog(
-                friends[index],
-                friendService.removeFriend,
-              ),
-            ),
+                title: Text(
+                  friend,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                subtitle: Text(
+                  lastMessage?.message ?? '',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(
+                    Icons.delete,
+                    color: Colors.red,
+                  ),
+                  onPressed: () => confirmationDialog(
+                    friends[index],
+                    friendService.removeFriend,
+                  ),
+                ),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(friends[index]),
+                  ),
+                ),
+              );
+            },
           );
         },
       ),

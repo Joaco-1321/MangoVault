@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mangovault/model/message.dart';
 import 'package:mangovault/services/auth_service.dart';
 import 'package:mangovault/services/message_service.dart';
+import 'package:mangovault/widgets/message_bubble_widget.dart';
 import 'package:provider/provider.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -29,7 +30,11 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('chat - ${widget.recipient}'),
+        title: Text(
+          'chat - ${widget.recipient}',
+          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Consumer<MessageService>(
         builder: (context, messageService, child) {
@@ -50,64 +55,48 @@ class _ChatScreenState extends State<ChatScreen> {
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
-                  itemCount: messageService.getMessages(widget.recipient).length,
+                  itemCount:
+                      messageService.getMessages(widget.recipient).length,
                   itemBuilder: (context, index) {
-                    final message = messageService.getMessages(widget.recipient)[index];
+                    final message =
+                        messageService.getMessages(widget.recipient)[index];
 
-                    return Align(
-                      alignment: message.sender == _authService.username!
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(
-                          vertical: 4.0,
-                          horizontal: 8.0,
-                        ),
-                        padding: const EdgeInsets.all(12.0),
-                        decoration: BoxDecoration(
-                          color: message.sender == _authService.username!
-                              ? Colors.blue
-                              : Colors.grey,
-                          borderRadius: BorderRadius.circular(16.0),
-                        ),
-                        child: Text(
-                          message.message,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
+                    return MessageBubble(
+                      message: messageService
+                          .getMessages(widget.recipient)[index]
+                          .message,
+                      sentByMe: message.sender == _authService.username!,
                     );
                   },
                 ),
               ),
-              Padding(
+              const Divider(height: 1),
+              Container(
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _textController,
-                        decoration:
-                            const InputDecoration(labelText: 'send a message'),
+                        decoration: const InputDecoration(
+                          labelText: 'send a message',
+                          border: InputBorder.none,
+                        ),
+                        onSubmitted: (text) => _sendMessage(
+                          messageService,
+                          text.trim(),
+                        ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: () {
-                        final String message = _textController.text.trim();
-
-                        if (message.isNotEmpty) {
-                          messageService.sendMessage(
-                            Message(
-                              _authService.username!,
-                              widget.recipient,
-                              message,
-                              DateTime.now(),
-                            ),
-                          );
-
-                          _textController.clear();
-                        }
-                      },
+                      icon: Icon(
+                        Icons.send,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      onPressed: () => _sendMessage(
+                        messageService,
+                        _textController.text.trim(),
+                      ),
                     ),
                   ],
                 ),
@@ -124,5 +113,20 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollController.dispose();
     _textController.dispose();
     super.dispose();
+  }
+
+  void _sendMessage(MessageService service, String message) {
+    if (message.isNotEmpty) {
+      service.sendMessage(
+        Message(
+          _authService.username!,
+          widget.recipient,
+          message,
+          DateTime.now(),
+        ),
+      );
+
+      _textController.clear();
+    }
   }
 }

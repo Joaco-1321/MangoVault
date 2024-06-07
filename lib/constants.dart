@@ -1,4 +1,4 @@
-const host = '192.168.0.26:8080';
+const host = '192.168.159.113:8080';
 
 const serverUrl = 'ws://$host/mangovault';
 const apiUrl = 'http://$host/api/v1';
