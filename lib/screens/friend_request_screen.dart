@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mangovault/services/auth_service.dart';
 import 'package:mangovault/services/friend_service.dart';
 import 'package:provider/provider.dart';
 

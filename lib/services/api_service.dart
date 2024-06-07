@@ -25,30 +25,36 @@ class ApiService {
     String endpoint,
     Object? body, {
     FutureOr<dynamic> Function(http.Response)? callback,
+    Map<String, String>? headers,
   }) async {
+    final authHeader = {
+      'Authorization': 'Basic ${_authService.authToken}',
+    };
+
+    if (headers != null) authHeader.addAll(headers);
+
     await http
         .post(
           Uri.parse(endpoint),
-          headers: {
-            'Authorization': 'Basic ${_authService.authToken}',
-          },
           body: body,
+          headers: authHeader,
         )
         .then(
           (value) => callback?.call(value),
         );
   }
 
-  static Future<List<T>> getJsonList<T>(String endpoint, String token) async {
-    final response = await http.get(
+  Future<void> delete(
+    String endpoint,
+    FutureOr<dynamic> Function(http.Response)? callback,
+  ) async {
+    await http.delete(
       Uri.parse(endpoint),
       headers: {
-        'Authorization': 'Basic $token',
+        'Authorization': 'Basic ${_authService.authToken}',
       },
+    ).then(
+      (value) => callback?.call(value),
     );
-
-    List<dynamic> list = json.decode(response.body);
-
-    return list.cast();
   }
 }

@@ -55,9 +55,36 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (context) => ChatScreen(friends[index]),
                 ),
               ),
+              onLongPress: () => confirmationDialog(
+                friends[index],
+                friendService.removeFriend,
+              ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  void confirmationDialog(String friend, Function(String) remove) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('remove friend'),
+        content: Text('do you want to remove $friend from your friends?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              remove(friend);
+              Navigator.pop(context);
+            },
+            child: const Text('yes'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('no'),
+          ),
+        ],
       ),
     );
   }

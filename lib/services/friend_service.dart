@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:mangovault/constants.dart';
 import 'package:mangovault/model/friend_request.dart';
@@ -26,12 +25,110 @@ class FriendService with ChangeNotifier {
 
   List<FriendRequest> get receivedRequests => _user.receivedRequests;
 
+  Future<void> removeFriend(String friend) async {
+    if (_user.friends.contains(friend)) {
+      int statusCode = 400;
+
+      await _apiService.delete(
+        '$friendEndpoint/$friend',
+        (response) => statusCode = response.statusCode,
+      );
+
+      if (statusCode == 200) {
+        friends.remove(friend);
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> sendFriendRequest({required String recipient}) async {
+    if (!_user.friends.contains(recipient) &&
+        sentRequests
+            .where((request) => request.recipient == recipient)
+            .isEmpty &&
+        receivedRequests
+            .where((request) => request.requester == recipient)
+            .isEmpty &&
+        _user.username != recipient) {
+      final statusCode = await _operateFriendRequest(
+        username: recipient,
+        status: RequestStatus.pending,
+        postfix: 'send',
+        isRequester: false,
+      );
+
+      if (statusCode == 200) {
+        sentRequests.add(FriendRequest(
+          requester: _user.username,
+          recipient: recipient,
+          status: RequestStatus.pending,
+        ));
+      }
+
+      notifyListeners();
+    }
+  }
+
+  Future<void> acceptFriendRequest({required String requester}) async {
+    if (!friends.contains(requester) && _user.username != requester) {
+      final statusCode = await _operateFriendRequest(
+        username: requester,
+        status: RequestStatus.accepted,
+        postfix: 'accept',
+        isRequester: true,
+      );
+
+      if (statusCode == 200) {
+        friends.add(requester);
+        receivedRequests
+            .removeWhere((request) => request.requester == requester);
+      }
+
+      notifyListeners();
+    }
+  }
+
+  Future<void> rejectFriendRequest({required String requester}) async {
+    if (!friends.contains(requester) && _user.username != requester) {
+      final statusCode = await _operateFriendRequest(
+        username: requester,
+        status: RequestStatus.rejected,
+        postfix: 'reject',
+        isRequester: true,
+      );
+
+      if (statusCode == 200) {
+        receivedRequests
+            .removeWhere((request) => request.requester == requester);
+      }
+
+      notifyListeners();
+    }
+  }
+
+  Future<void> cancelSentRequest({required String recipient}) async {
+    if (!friends.contains(recipient) && _user.username != recipient) {
+      final statusCode = await _operateFriendRequest(
+        username: recipient,
+        status: RequestStatus.canceled,
+        postfix: 'cancel',
+        isRequester: false,
+      );
+
+      if (statusCode == 200) {
+        sentRequests.removeWhere((request) => request.recipient == recipient);
+      }
+
+      notifyListeners();
+    }
+  }
+
   Future<void> _init() async {
     _user = _authService.user!;
 
     await _apiService.get(
       friendEndpoint,
-      (response) => _user.friends.addAll(
+      (response) => friends.addAll(
         (json.decode(response.body) as List<dynamic>).cast(),
       ),
     );
@@ -56,16 +153,16 @@ class FriendService with ChangeNotifier {
           case RequestStatus.pending:
             _user.addFriendRequest(requestReceived);
           case RequestStatus.accepted:
-            _user.friends.add(requestReceived.recipient);
-            _user.sentRequests.removeWhere(
+            friends.add(requestReceived.recipient);
+            sentRequests.removeWhere(
               (request) => request.recipient == requestReceived.recipient,
             );
           case RequestStatus.rejected:
-            _user.sentRequests.removeWhere(
+            sentRequests.removeWhere(
               (request) => request.recipient == requestReceived.recipient,
             );
           case RequestStatus.canceled:
-            _user.receivedRequests.removeWhere(
+            receivedRequests.removeWhere(
               (request) => request.requester == requestReceived.requester,
             );
         }
@@ -74,90 +171,16 @@ class FriendService with ChangeNotifier {
       },
     );
 
+    _webSocketService.subscribe(
+      "/user/queue/notification/remove",
+          (frame) {
+        friends.remove(frame.body);
+
+        notifyListeners();
+      },
+    );
+
     notifyListeners();
-  }
-
-  Future<void> sendFriendRequest({required String recipient}) async {
-    if (!_user.friends.contains(recipient) &&
-        _user.sentRequests
-            .where((request) => request.recipient == recipient)
-            .isNotEmpty &&
-        _user.receivedRequests
-            .where((request) => request.requester == recipient)
-            .isNotEmpty &&
-        _user.username != recipient) {
-      final statusCode = await _operateFriendRequest(
-        username: recipient,
-        status: RequestStatus.pending,
-        postfix: 'send',
-        isRequester: false,
-      );
-
-      if (statusCode == 200) {
-        _user.sentRequests.add(FriendRequest(
-          requester: _user.username,
-          recipient: recipient,
-          status: RequestStatus.pending,
-        ));
-      }
-
-      notifyListeners();
-    }
-  }
-
-  Future<void> acceptFriendRequest({required String requester}) async {
-    if (!_user.friends.contains(requester) && _user.username != requester) {
-      final statusCode = await _operateFriendRequest(
-        username: requester,
-        status: RequestStatus.accepted,
-        postfix: 'accept',
-        isRequester: true,
-      );
-
-      if (statusCode == 200) {
-        _user.friends.add(requester);
-        _user.receivedRequests
-            .removeWhere((request) => request.requester == requester);
-      }
-
-      notifyListeners();
-    }
-  }
-
-  Future<void> rejectFriendRequest({required String requester}) async {
-    if (!_user.friends.contains(requester) && _user.username != requester) {
-      final statusCode = await _operateFriendRequest(
-        username: requester,
-        status: RequestStatus.rejected,
-        postfix: 'reject',
-        isRequester: true,
-      );
-
-      if (statusCode == 200) {
-        _user.receivedRequests
-            .removeWhere((request) => request.requester == requester);
-      }
-
-      notifyListeners();
-    }
-  }
-
-  Future<void> cancelSentRequest({required String recipient}) async {
-    if (!_user.friends.contains(recipient) && _user.username != recipient) {
-      final statusCode = await _operateFriendRequest(
-        username: recipient,
-        status: RequestStatus.canceled,
-        postfix: 'cancel',
-        isRequester: false,
-      );
-
-      if (statusCode == 200) {
-        _user.sentRequests
-            .removeWhere((request) => request.recipient == recipient);
-      }
-
-      notifyListeners();
-    }
   }
 
   Future<int> _operateFriendRequest({
@@ -166,18 +189,20 @@ class FriendService with ChangeNotifier {
     required String postfix,
     required bool isRequester,
   }) async {
-    return (await http.post(
-      Uri.parse('$friendEndpoint/request/$postfix'),
-      headers: {
-        'Authorization': 'Basic ${_user.authToken}',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'requester': isRequester ? username : _user.username,
-        'recipient': isRequester ? _user.username : username,
-        'status': status.name.toUpperCase(),
-      }),
-    ))
-        .statusCode;
+    int statusCode = 400;
+
+    await _apiService.post(
+        '$friendEndpoint/request/$postfix',
+        json.encode({
+          'requester': isRequester ? username : _user.username,
+          'recipient': isRequester ? _user.username : username,
+          'status': status.name.toUpperCase(),
+        }),
+        callback: (response) => statusCode = response.statusCode,
+        headers: {
+          'Content-Type': 'application/json',
+        });
+
+    return statusCode;
   }
 }
